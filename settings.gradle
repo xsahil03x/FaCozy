@@ -1,0 +1,9 @@
+rootProject.name='FaCozy'
+include ':app'
+setBinding(new Binding([gradle: this]))
+evaluate(new File(
+  settingsDir,
+  'sample_flutter_module/.android/include_flutter.groovy'
+))
+
+include ':sample_flutter_module'
