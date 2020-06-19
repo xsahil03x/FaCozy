@@ -1,9 +1,15 @@
+import 'dart:async';
 import 'dart:convert';
 
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:samplefluttermodule/channel_handler.dart';
 
-void main() => runApp(MyApp());
+void main() {
+  WidgetsFlutterBinding.ensureInitialized();
+  runApp(MyApp());
+}
 
 enum Operation {
   Add,
@@ -12,37 +18,112 @@ enum Operation {
   Subtract,
 }
 
-class MyApp extends StatelessWidget {
-  // This widget is the root of your application.
+class _Routes {
+  static const String SPLASH = '/';
+  static const String CALCULATION = '/calculation';
+  static const String NETWORK_CALL = '/network_call';
+
+  static Route<dynamic> generateRoute(RouteSettings settings) {
+    switch (settings.name) {
+      case SPLASH:
+        return MaterialPageRoute(
+          settings: const RouteSettings(name: SPLASH),
+          builder: (_) => Scaffold(
+            body: Center(child: Text('SPLASH')),
+          ),
+        );
+      case CALCULATION:
+        return MaterialPageRoute(
+          settings: const RouteSettings(name: CALCULATION),
+          builder: (_) {
+            final args = settings.arguments as Map;
+            final num1 = args["num1"];
+            final num2 = args["num2"];
+            return CalculationScreen(num1: num1, num2: num2);
+          },
+        );
+      case NETWORK_CALL:
+        return MaterialPageRoute(
+          settings: const RouteSettings(name: NETWORK_CALL),
+          builder: (_) => NetworkCallScreen(),
+        );
+      default:
+        return MaterialPageRoute(
+          builder: (_) => Scaffold(
+            body: Center(child: Text('No route defined for ${settings.name}')),
+          ),
+        );
+    }
+  }
+}
+
+class MyApp extends StatefulWidget {
+  @override
+  _MyAppState createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  final _myAppNavigatorKey = GlobalKey<NavigatorState>();
+  Completer<String> initialRouteCompleter = Completer();
+
+  @override
+  void initState() {
+    super.initState();
+    ChannelHandler.setMethodCallHandler(_onMethodCall);
+  }
+
+  Future<void> _onMethodCall(MethodCall call) async {
+    print(call);
+    try {
+      if (call.method == "SetInitialRoute") {
+        final data = call.arguments;
+        Map args;
+        final jData = json.decode(data);
+        print(jData);
+        final route = jData["InitialRoute"];
+        if (jData["Arguments"] != null) {
+          final aData = json.decode(jData["Arguments"]);
+          print(aData);
+          args = aData;
+        }
+        _myAppNavigatorKey.currentState.pushNamedAndRemoveUntil(
+          route,
+          (_) => false,
+          arguments: args,
+        );
+      }
+    } on PlatformException catch (e) {
+      debugPrint(e.toString());
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'FaCozy POC',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // Try running your application with "flutter run". You'll see the
-        // application has a blue toolbar. Then, without quitting the app, try
-        // changing the primarySwatch below to Colors.green and then invoke
-        // "hot reload" (press "r" in the console where you ran "flutter run",
-        // or press Run > Flutter Hot Reload in a Flutter IDE). Notice that the
-        // counter didn't reset back to zero; the application is not restarted.
-        primarySwatch: Colors.blue,
-      ),
-      home: CalculationScreen(),
+      theme: ThemeData(primarySwatch: Colors.blue),
+      navigatorKey: _myAppNavigatorKey,
+      onGenerateRoute: _Routes.generateRoute,
     );
   }
 }
 
 class CalculationScreen extends StatefulWidget {
+  final int num1;
+  final int num2;
+
+  const CalculationScreen({
+    Key key,
+    @required this.num1,
+    @required this.num2,
+  }) : super(key: key);
+
   @override
   _CalculationScreenState createState() => _CalculationScreenState();
 }
 
 class _CalculationScreenState extends State<CalculationScreen> {
-  final _methodChannel = const MethodChannel('fa_cozy_method_channel');
-
   Operation _currentOperation = Operation.Add;
 
   int _num1 = 0;
@@ -51,25 +132,8 @@ class _CalculationScreenState extends State<CalculationScreen> {
   @override
   void initState() {
     super.initState();
-    _methodChannel.setMethodCallHandler(_onMethodCall);
-  }
-
-  Future<void> _onMethodCall(MethodCall call) async {
-    print(call);
-    try {
-      print(call);
-      if (call.method == "FromHostToClient") {
-        final String data = call.arguments;
-        final jData = json.decode(data);
-
-        setState(() {
-          _num1 = jData['num1'];
-          _num2 = jData['num2'];
-        });
-      }
-    } on PlatformException catch (e) {
-      debugPrint(e.toString());
-    }
+    _num1 = widget.num1;
+    _num2 = widget.num2;
   }
 
   void _sendResultsToHost() {
@@ -82,13 +146,13 @@ class _CalculationScreenState extends State<CalculationScreen> {
 
     final resultMap = {'operation': _currentOperation.index, 'result': _result};
 
-    _methodChannel.invokeMethod("FromClientToHost", resultMap);
+    ChannelHandler.invokeMethod("CalculationResult", resultMap);
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        appBar: AppBar(title: Text('Flutter Module')),
+        appBar: AppBar(title: Text('Calculator Screen')),
         body: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -163,5 +227,56 @@ class _CalculationScreenState extends State<CalculationScreen> {
             ],
           ),
         ));
+  }
+}
+
+class NetworkCallScreen extends StatefulWidget {
+  @override
+  _NetworkCallScreenState createState() => _NetworkCallScreenState();
+}
+
+class _NetworkCallScreenState extends State<NetworkCallScreen> {
+  bool isFetching = false;
+
+  void _fetchData() async {
+    setState(() {
+      isFetching = true;
+    });
+    final data = await Dio().get("https://api.ipify.org/?format=json");
+    setState(() {
+      isFetching = false;
+    });
+    final resultMap = {'ip': data.data["ip"]};
+    ChannelHandler.invokeMethod("NetworkCallResult", resultMap);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Network Call Screen'),
+      ),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: <Widget>[
+            if (isFetching) CircularProgressIndicator(),
+            RaisedButton(
+              onPressed: _fetchData,
+              textColor: Colors.white,
+              padding: const EdgeInsets.all(0.0),
+              child: Container(
+                decoration: BoxDecoration(color: Colors.blue),
+                padding: const EdgeInsets.all(10.0),
+                child: const Text(
+                  'Fetch and Send Results back to Android module',
+                  style: TextStyle(fontSize: 16),
+                ),
+              ),
+            )
+          ],
+        ),
+      ),
+    );
   }
 }

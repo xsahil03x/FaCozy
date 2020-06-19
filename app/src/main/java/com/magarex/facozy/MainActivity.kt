@@ -7,11 +7,13 @@ import android.os.Bundle
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import kotlinx.android.synthetic.main.activity_main.*
+import org.json.JSONObject
 
 class MainActivity : AppCompatActivity() {
 
     companion object {
-        const val ACTIVITY_REQUEST_CODE = 333
+        const val CALCULATION_REQUEST_CODE = 333
+        const val NETWORK_CALL_REQUEST_CODE = 777
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -20,20 +22,38 @@ class MainActivity : AppCompatActivity() {
         btn_calculate.setOnClickListener {
             val pair = isInputValid()
             if (pair != null) {
-                SampleFlutterActivity.startActivityForResult(this, pair.first, pair.second)
+                SampleFlutterActivity.startActivityForResult(
+                    this, initialRoute = "/calculation", args = JSONObject().apply {
+                        put("num1", pair.first)
+                        put("num2", pair.second)
+                    }.toString(),
+                    requestCode = CALCULATION_REQUEST_CODE
+                )
             }
+        }
+        btn_network_call.setOnClickListener {
+            SampleFlutterActivity.startActivityForResult(
+                this,
+                "/network_call",
+                requestCode = NETWORK_CALL_REQUEST_CODE
+            )
         }
     }
 
     @SuppressLint("SetTextI18n")
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         when (resultCode == Activity.RESULT_OK) {
-            requestCode == ACTIVITY_REQUEST_CODE -> {
+            requestCode == CALCULATION_REQUEST_CODE -> {
                 print(data)
                 val result = data?.extras?.getInt("result")
                 val operation = data?.extras?.getInt("operation") ?: 0
                 val text = "${Operation.values()[operation].name} of the entered numbers is $result"
                 tvResult.text = text
+            }
+            requestCode == NETWORK_CALL_REQUEST_CODE -> {
+                print(data)
+                val ip = data?.extras?.getString("ip")
+                tvNetworkCallResult.text = ip
             }
             else -> tvResult.text = "Could not perform the operation"
 

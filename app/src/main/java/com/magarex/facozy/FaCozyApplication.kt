@@ -14,6 +14,9 @@ class FaCozyApplication : Application() {
         // Instantiate a FlutterEngine.
         flutterEngine = FlutterEngine(this)
 
+        // Configure an initial route.
+        flutterEngine.navigationChannel.setInitialRoute("/")
+
         // Start executing Dart code to pre-warm the FlutterEngine.
         flutterEngine.dartExecutor.executeDartEntrypoint(
             DartExecutor.DartEntrypoint.createDefault()

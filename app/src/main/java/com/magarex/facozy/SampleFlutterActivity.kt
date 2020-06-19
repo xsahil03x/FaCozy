@@ -11,19 +11,24 @@ class SampleFlutterActivity : FlutterActivity() {
 
     companion object {
         const val METHOD_CHANNEL_NAME = "fa_cozy_method_channel"
-        fun startActivityForResult(context: MainActivity, first: Int, second: Int) {
+        fun startActivityForResult(
+            context: MainActivity,
+            initialRoute: String? = null,
+            args: String? = null,
+            requestCode: Int
+        ) {
             val intent = Intent(context, SampleFlutterActivity::class.java)
-            intent.putExtra("num1", first)
-            intent.putExtra("num2", second)
-            context.startActivityForResult(intent, MainActivity.ACTIVITY_REQUEST_CODE)
+            if (initialRoute != null) intent.putExtra("initialRoute", initialRoute)
+            if (args != null) intent.putExtra("args", args)
+            context.startActivityForResult(intent, requestCode)
         }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        val num1 = intent?.extras?.getInt("num1", 0)
-        val num2 = intent?.extras?.getInt("num2", 0)
+        val initialRoute = intent?.extras?.getString("initialRoute")
+        val args = intent?.extras?.getString("args")
 
         if (flutterEngine?.dartExecutor != null) {
             MethodChannel(
@@ -33,7 +38,7 @@ class SampleFlutterActivity : FlutterActivity() {
                 it.setMethodCallHandler { call, result ->
                     when (call.method) {
                         // manage method calls here
-                        "FromClientToHost" -> {
+                        "CalculationResult" -> {
                             val resultStr = call.arguments.toString()
                             val resultJson = JSONObject(resultStr)
                             val res = resultJson.getInt("result")
@@ -45,6 +50,16 @@ class SampleFlutterActivity : FlutterActivity() {
                             setResult(Activity.RESULT_OK, intent)
                             finish()
                         }
+                        "NetworkCallResult" -> {
+                            val resultStr = call.arguments.toString()
+                            val resultJson = JSONObject(resultStr)
+                            val ip = resultJson.getString("ip")
+
+                            val intent = Intent()
+                            intent.putExtra("ip", ip)
+                            setResult(Activity.RESULT_OK, intent)
+                            finish()
+                        }
                         else -> {
                             result.notImplemented()
                             setResult(Activity.RESULT_CANCELED)
@@ -52,12 +67,13 @@ class SampleFlutterActivity : FlutterActivity() {
                         }
                     }
                 }
-                it.invokeMethod(
-                    "FromHostToClient", JSONObject().apply {
-                        put("num1", num1)
-                        put("num2", num2)
-                    }.toString()
-                )
+                if (initialRoute != null) {
+                    val data: JSONObject = JSONObject().apply {
+                        put("InitialRoute", initialRoute)
+                    }
+                    if (args != null) data.put("Arguments", args)
+                    it.invokeMethod("SetInitialRoute", data.toString())
+                }
             }
         }
     }
