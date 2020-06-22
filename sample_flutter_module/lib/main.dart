@@ -1,10 +1,10 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:samplefluttermodule/channel_handler.dart';
+import 'package:samplefluttermodule/network_call_repo.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -91,6 +91,9 @@ class _MyAppState extends State<MyApp> {
           (_) => false,
           arguments: args,
         );
+      } else if (call.method == "GetIpAddress") {
+        final currentIp = await NetworkCallRepo().getCurrentIpAddress();
+        return currentIp;
       }
     } on PlatformException catch (e) {
       debugPrint(e.toString());
@@ -242,11 +245,11 @@ class _NetworkCallScreenState extends State<NetworkCallScreen> {
     setState(() {
       isFetching = true;
     });
-    final data = await Dio().get("https://api.ipify.org/?format=json");
+    final currentIp = await NetworkCallRepo().getCurrentIpAddress();
     setState(() {
       isFetching = false;
     });
-    final resultMap = {'ip': data.data["ip"]};
+    final resultMap = {'ip': currentIp};
     ChannelHandler.invokeMethod("NetworkCallResult", resultMap);
   }
 

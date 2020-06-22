@@ -4,13 +4,11 @@ import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
 import io.flutter.embedding.android.FlutterActivity
-import io.flutter.plugin.common.MethodChannel
 import org.json.JSONObject
 
 class SampleFlutterActivity : FlutterActivity() {
 
     companion object {
-        const val METHOD_CHANNEL_NAME = "fa_cozy_method_channel"
         fun startActivityForResult(
             context: MainActivity,
             initialRoute: String? = null,
@@ -30,50 +28,45 @@ class SampleFlutterActivity : FlutterActivity() {
         val initialRoute = intent?.extras?.getString("initialRoute")
         val args = intent?.extras?.getString("args")
 
-        if (flutterEngine?.dartExecutor != null) {
-            MethodChannel(
-                flutterEngine!!.dartExecutor,
-                METHOD_CHANNEL_NAME
-            ).also {
-                it.setMethodCallHandler { call, result ->
-                    when (call.method) {
-                        // manage method calls here
-                        "CalculationResult" -> {
-                            val resultStr = call.arguments.toString()
-                            val resultJson = JSONObject(resultStr)
-                            val res = resultJson.getInt("result")
-                            val operation = resultJson.getInt("operation")
+        (application as? FaCozyApplication)?.methodChannel?.also {
+            it.setMethodCallHandler { call, result ->
+                when (call.method) {
+                    // manage method calls here
+                    "CalculationResult" -> {
+                        val resultStr = call.arguments.toString()
+                        val resultJson = JSONObject(resultStr)
+                        val res = resultJson.getInt("result")
+                        val operation = resultJson.getInt("operation")
 
-                            val intent = Intent()
-                            intent.putExtra("result", res)
-                            intent.putExtra("operation", operation)
-                            setResult(Activity.RESULT_OK, intent)
-                            finish()
-                        }
-                        "NetworkCallResult" -> {
-                            val resultStr = call.arguments.toString()
-                            val resultJson = JSONObject(resultStr)
-                            val ip = resultJson.getString("ip")
+                        val intent = Intent()
+                        intent.putExtra("result", res)
+                        intent.putExtra("operation", operation)
+                        setResult(Activity.RESULT_OK, intent)
+                        finish()
+                    }
+                    "NetworkCallResult" -> {
+                        val resultStr = call.arguments.toString()
+                        val resultJson = JSONObject(resultStr)
+                        val ip = resultJson.getString("ip")
 
-                            val intent = Intent()
-                            intent.putExtra("ip", ip)
-                            setResult(Activity.RESULT_OK, intent)
-                            finish()
-                        }
-                        else -> {
-                            result.notImplemented()
-                            setResult(Activity.RESULT_CANCELED)
-                            finish()
-                        }
+                        val intent = Intent()
+                        intent.putExtra("ip", ip)
+                        setResult(Activity.RESULT_OK, intent)
+                        finish()
+                    }
+                    else -> {
+                        result.notImplemented()
+                        setResult(Activity.RESULT_CANCELED)
+                        finish()
                     }
                 }
-                if (initialRoute != null) {
-                    val data: JSONObject = JSONObject().apply {
-                        put("InitialRoute", initialRoute)
-                    }
-                    if (args != null) data.put("Arguments", args)
-                    it.invokeMethod("SetInitialRoute", data.toString())
+            }
+            if (initialRoute != null) {
+                val data: JSONObject = JSONObject().apply {
+                    put("InitialRoute", initialRoute)
                 }
+                if (args != null) data.put("Arguments", args)
+                it.invokeMethod("SetInitialRoute", data.toString())
             }
         }
     }

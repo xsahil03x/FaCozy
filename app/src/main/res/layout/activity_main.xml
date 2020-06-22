@@ -49,7 +49,7 @@
         android:paddingEnd="16dp"
         android:text="Calculate"
         android:textColor="@android:color/white"
-        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintBottom_toTopOf="@id/btn_network_call"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/et_number_2"
@@ -62,7 +62,7 @@
         android:layout_marginEnd="8dp"
         android:layout_marginRight="8dp"
         android:layout_marginBottom="8dp"
-        android:paddingTop="32dp"
+        android:paddingTop="16dp"
         android:text="Result number will be shown here."
         android:textColor="@color/colorAccent"
         android:textSize="16sp"
@@ -79,7 +79,7 @@
         android:paddingHorizontal="16dp"
         android:text="Fetch Data From Api"
         android:textColor="@android:color/white"
-        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintBottom_toTopOf="@id/btn_background_network_call"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/tvResult" />
@@ -91,7 +91,7 @@
         android:layout_marginEnd="8dp"
         android:layout_marginRight="8dp"
         android:layout_marginBottom="8dp"
-        android:paddingTop="32dp"
+        android:paddingTop="16dp"
         android:text="Network Call Result will be shown here."
         android:textColor="@color/colorAccent"
         android:textSize="16sp"
@@ -99,5 +99,44 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/btn_network_call" />
+
+    <Button
+        android:id="@+id/btn_background_network_call"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:background="@color/colorPrimary"
+        android:paddingHorizontal="16dp"
+        android:text="Fetch Data From Api"
+        android:textColor="@android:color/white"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/tvNetworkCallResult" />
+
+    <TextView
+        android:id="@+id/tvBackgroundNetworkCallResult"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="8dp"
+        android:layout_marginRight="8dp"
+        android:layout_marginBottom="8dp"
+        android:paddingTop="16dp"
+        android:text="Network Call Result will be shown here."
+        android:textColor="@color/colorAccent"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/btn_background_network_call" />
+
+    <ProgressBar
+        android:id="@+id/networkCallProgressBar"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:visibility="gone"
+        android:paddingTop="16dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/btn_background_network_call" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

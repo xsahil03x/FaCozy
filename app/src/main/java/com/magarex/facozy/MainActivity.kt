@@ -4,8 +4,11 @@ import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
+import android.view.View.GONE
+import android.view.View.VISIBLE
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import io.flutter.plugin.common.MethodChannel
 import kotlinx.android.synthetic.main.activity_main.*
 import org.json.JSONObject
 
@@ -38,6 +41,39 @@ class MainActivity : AppCompatActivity() {
                 requestCode = NETWORK_CALL_REQUEST_CODE
             )
         }
+        btn_background_network_call.setOnClickListener{
+            networkCallProgressBar.visibility = VISIBLE
+            tvBackgroundNetworkCallResult.visibility = GONE
+            (application as FaCozyApplication).methodChannel.invokeMethod(
+                "GetIpAddress", null, object : MethodChannel.Result {
+                    override fun success(result: Any?) {
+                        if (result != null) {
+                            networkCallProgressBar.visibility = GONE
+                            tvBackgroundNetworkCallResult.visibility = VISIBLE
+                            tvBackgroundNetworkCallResult.text = result as String
+                        }
+                    }
+
+                    override fun error(
+                        errorCode: String?,
+                        errorMessage: String?,
+                        errorDetails: Any?
+                    ) {
+                        if (errorMessage != null) {
+                            networkCallProgressBar.visibility = GONE
+                            tvBackgroundNetworkCallResult.visibility = VISIBLE
+                            tvBackgroundNetworkCallResult.text = errorMessage
+                        }
+                    }
+
+                    override fun notImplemented() {
+                        networkCallProgressBar.visibility = GONE
+                        tvBackgroundNetworkCallResult.visibility = VISIBLE
+                        tvBackgroundNetworkCallResult.text = "GetIpAddress Not Implemented yet"
+                    }
+                }
+            )
+        }
     }
 
     @SuppressLint("SetTextI18n")
@@ -59,7 +95,6 @@ class MainActivity : AppCompatActivity() {
 
         }
         super.onActivityResult(requestCode, resultCode, data)
-
     }
 
 
